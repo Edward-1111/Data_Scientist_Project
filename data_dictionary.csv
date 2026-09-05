@@ -1,0 +1,33 @@
+column_name,description,expected_data_type,business_meaning,possible_data_quality_problem
+customer_id,Unique identifier for a customer record,integer,Primary key for joining/tracking a customer,Not unique across rows — some IDs repeat due to duplicate/re-entered records
+signup_date,Date the customer created their account,date,Used to compute tenure/customer age on platform,Multiple date formats mixed together; a few invalid/nonsensical date strings
+gender,Self-reported gender of the customer,categorical,Used for demographic segmentation,"Inconsistent casing/abbreviations (Male/male/M/m), missing values with varied tokens, stray whitespace"
+customer_age,Customer's age in years,integer,Used for demographic analysis and targeting,"Stored sometimes as string, missing values, and a few impossible values (e.g. negative, 0, 150+)"
+country,Country of the customer's registered address,categorical,Used for regional analysis and localization,"Same country expressed multiple ways (USA/US/United States/U.S.A.), whitespace padding"
+city,City of the customer's registered address,categorical,Finer-grained location for regional analysis,"Missing values, whitespace padding"
+customer_segment,"Business-assigned customer segment (e.g. VIP, At Risk)",categorical,Marketing/CRM segmentation label,Missing values; may correlate strongly with churn (check for leakage risk)
+membership_type,Tier of paid membership the customer holds,categorical,Indicates loyalty tier / spend commitment,"Inconsistent casing, trailing/leading whitespace, missing values"
+acquisition_channel,Marketing channel through which the customer was acquired,categorical,Used for marketing attribution/ROI analysis,"Missing values, whitespace padding"
+payment_method,Primary payment method on file,categorical,Used for payment/fraud and preference analysis,"Multiple encodings for the same method (Credit Card/credit_card/CC), missing values"
+preferred_device,Device type most used to access the platform,categorical,Used for UX/channel optimization,"Inconsistent casing, missing values, whitespace"
+product_category,Primary product category the customer purchases from,categorical,Used for merchandising/category analysis,Missing values
+subscription_type,"Type of subscription plan, if any",categorical,Indicates recurring revenue relationship,Missing values; 'None' represents no subscription and may be conflated with true missingness
+subscription_start,Date the customer's current/most recent subscription began,date,Used to compute subscription tenure,"Mixed date formats, missing values, only applicable when subscription_type != None"
+subscription_end,Date the customer's subscription ends/ended,date,Used to determine active vs. expired subscription status,"Mixed date formats, missing values, some end dates in the past (expired) vs future (active)"
+annual_income,Customer's self-reported or estimated annual income,float,Used for income-based segmentation/affordability analysis,"Stored as messy strings ($52,000 / 52k / 52000 USD), missing values, extreme outliers"
+account_balance,Current balance held in the customer's account/wallet,float,Indicates stored value / store-credit relationship,"Messy currency-string formatting, missing values, some negative values"
+total_spending,Cumulative amount spent by the customer to date,float,Core monetary metric of customer value,"Messy currency-string formatting, missing values, some negative values that shouldn't be possible"
+average_order_value,Average value per order for the customer,float,"Derived spending metric, useful for segmentation","Missing values, potential inconsistency with total_spending/number_of_orders"
+number_of_orders,Total number of completed orders,integer,Core engagement/frequency metric,"Stored sometimes as string with thousands separators, some negative and zero values, some extreme outliers"
+days_since_last_order,Number of days elapsed since the customer's last order,integer,"Recency metric, strong churn signal","Extreme outliers (multi-year inactivity), possible inconsistency with last_purchase_date"
+last_purchase_date,Date of the customer's most recent purchase,date,Used to compute recency,"Mixed date formats, missing values, may be missing for customers with 0 orders (expected) or unexpectedly missing otherwise"
+last_login,Date of the customer's most recent platform login,date,Engagement/activity recency metric,"Mixed date formats, missing values"
+website_visits,Count of website/app visits in the observed period,integer,Engagement metric,"Missing values, some implausibly large outlier counts (bot-like activity)"
+support_tickets,Number of customer support tickets raised,integer,Indicator of friction/dissatisfaction,Missing values
+discount_usage,Number of times the customer used a discount/coupon code,integer,Indicates price sensitivity/promotion responsiveness,Missing values
+refund_amount,Total monetary amount refunded to the customer,float,Indicates dissatisfaction / product issues,"Messy currency-string formatting, missing values"
+lifetime_value,Estimated total value of the customer over their tenure,float,Key business KPI for prioritization,"Missing values, may be derived from other spending fields (check for redundancy/leakage)"
+cancellation_reason,"Reason given for cancelling, if applicable",categorical,Captured during offboarding/cancellation flow,Populated almost exclusively for churned customers — strong potential data leakage column
+cancellation_date,Date the customer's cancellation was recorded,date,Captured during offboarding/cancellation flow,Populated almost exclusively for churned customers — strong potential data leakage column; mixed date formats
+final_account_status,Most recent known status of the customer's account,categorical,Reflects current account state (Active/Closed/etc.),Values like 'Closed'/'Cancelled'/'Deactivated' appear almost only for churned customers — potential data leakage column
+churn,Target variable: whether the customer churned,integer (0/1),Prediction target for the modeling task,"Class imbalance present; treat as ground truth label, not a feature"
