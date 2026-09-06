@@ -1,0 +1,162 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df = pd.read_csv("ecommerce_customer_churn_messy.csv")
+
+df.head()
+df.shape
+df.columns
+df.info()
+df.dtypes
+df.describe()
+df.describe(include="all")
+df.isnull().sum()
+df.isnull().mean() * 100
+df.duplicated().sum()
+df["churn"].value_counts()
+df["churn"].value_counts(normalize=True) * 100
+
+df = df.drop_duplicates()
+df.shape
+
+missing_tokens = [
+    "",
+    "na",
+    "n/a",
+    "nan",
+    "null",
+    "none",
+    "unknown",
+    "?"
+]
+
+for col in df.select_dtypes(include="object").columns:
+    df[col] = df[col].replace(missing_tokens, np.nan)
+
+gender_map = {
+    "female": "Female",
+    "f": "Female",
+    "male": "Male",
+    "m": "Male"
+}
+
+df["gender"] = (
+    df["gender"]
+    .str.strip()
+    .str.lower()
+    .map(gender_map)
+)
+
+df["gender"].value_counts()
+
+df["membership_type"] = (
+    df["membership_type"]
+    .str.strip()
+    .str.lower()
+    .replace({
+        "basic": "Basic",
+        "premium": "Premium",
+        "gold": "Gold",
+        "platinum": "Platinum"
+    })
+)
+
+df["membership_type"].value_counts()
+
+def parse_number(value):
+    if pd.isna(value):
+        return np.nan
+
+    value = str(value).strip().lower()
+
+    if value in ["", "na", "n/a", "unknown", "?", "-", "null"]:
+        return np.nan
+
+    value = value.replace(",", "")
+    value = value.replace("$", "")
+    value = value.replace("usd", "")
+
+    if value.endswith("k"):
+        return float(value[:-1]) * 1000
+
+    return float(value)
+
+
+numeric_columns = [
+    "customer_age",
+    "annual_income",
+    "account_balance",
+    "total_spending",
+    "average_order_value",
+    "number_of_orders",
+    "days_since_last_order",
+    "website_visits",
+    "support_tickets",
+    "discount_usage",
+    "refund_amount",
+    "lifetime_value"
+]
+
+for col in numeric_columns:
+    df[col] = df[col].apply(parse_number)
+
+df[numeric_columns].dtypes
+
+df.loc[
+    ~df["customer_age"].between(18, 100),
+    "customer_age"
+] = np.nan
+
+df.loc[
+    ~df["customer_age"].between(18, 100),
+    "customer_age"
+] = np.nan
+
+non_negative_cols = [
+    "annual_income",
+    "total_spending",
+    "average_order_value",
+    "number_of_orders",
+    "days_since_last_order",
+    "website_visits",
+    "support_tickets",
+    "discount_usage",
+    "refund_amount",
+    "lifetime_value"
+]
+
+for col in non_negative_cols:
+    df.loc[df[col] < 0, col] = np.nan
+
+df["last_login"] = pd.to_datetime(
+    df["last_login"],
+    format="mixed",
+    errors="coerce"
+)
+
+df["last_login_year"] = df["last_login"].dt.year
+df["last_login_month"] = df["last_login"].dt.month
+df["last_login_dayofweek"] = df["last_login"].dt.dayofweek
+
+reference_date = pd.Timestamp("2025-07-01")
+
+df["days_since_login"] = (
+    reference_date - df["last_login"]
+).dt.days
+
+df["days_since_login"]
+
+X = df.drop(columns="churn")
+y = df["churn"]
+
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
