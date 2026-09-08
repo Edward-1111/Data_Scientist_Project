@@ -1,162 +1,253 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-df = pd.read_csv("ecommerce_customer_churn_messy.csv")
-
-df.head()
-df.shape
-df.columns
-df.info()
-df.dtypes
-df.describe()
-df.describe(include="all")
-df.isnull().sum()
-df.isnull().mean() * 100
-df.duplicated().sum()
-df["churn"].value_counts()
-df["churn"].value_counts(normalize=True) * 100
-
-df = df.drop_duplicates()
-df.shape
-
-missing_tokens = [
-    "",
-    "na",
-    "n/a",
-    "nan",
-    "null",
-    "none",
-    "unknown",
-    "?"
-]
-
-for col in df.select_dtypes(include="object").columns:
-    df[col] = df[col].replace(missing_tokens, np.nan)
-
-gender_map = {
-    "female": "Female",
-    "f": "Female",
-    "male": "Male",
-    "m": "Male"
-}
-
-df["gender"] = (
-    df["gender"]
-    .str.strip()
-    .str.lower()
-    .map(gender_map)
-)
-
-df["gender"].value_counts()
-
-df["membership_type"] = (
-    df["membership_type"]
-    .str.strip()
-    .str.lower()
-    .replace({
-        "basic": "Basic",
-        "premium": "Premium",
-        "gold": "Gold",
-        "platinum": "Platinum"
-    })
-)
-
-df["membership_type"].value_counts()
-
-def parse_number(value):
-    if pd.isna(value):
-        return np.nan
-
-    value = str(value).strip().lower()
-
-    if value in ["", "na", "n/a", "unknown", "?", "-", "null"]:
-        return np.nan
-
-    value = value.replace(",", "")
-    value = value.replace("$", "")
-    value = value.replace("usd", "")
-
-    if value.endswith("k"):
-        return float(value[:-1]) * 1000
-
-    return float(value)
-
-
-numeric_columns = [
-    "customer_age",
-    "annual_income",
-    "account_balance",
-    "total_spending",
-    "average_order_value",
-    "number_of_orders",
-    "days_since_last_order",
-    "website_visits",
-    "support_tickets",
-    "discount_usage",
-    "refund_amount",
-    "lifetime_value"
-]
-
-for col in numeric_columns:
-    df[col] = df[col].apply(parse_number)
-
-df[numeric_columns].dtypes
-
-df.loc[
-    ~df["customer_age"].between(18, 100),
-    "customer_age"
-] = np.nan
-
-df.loc[
-    ~df["customer_age"].between(18, 100),
-    "customer_age"
-] = np.nan
-
-non_negative_cols = [
-    "annual_income",
-    "total_spending",
-    "average_order_value",
-    "number_of_orders",
-    "days_since_last_order",
-    "website_visits",
-    "support_tickets",
-    "discount_usage",
-    "refund_amount",
-    "lifetime_value"
-]
-
-for col in non_negative_cols:
-    df.loc[df[col] < 0, col] = np.nan
-
-df["last_login"] = pd.to_datetime(
-    df["last_login"],
-    format="mixed",
-    errors="coerce"
-)
-
-df["last_login_year"] = df["last_login"].dt.year
-df["last_login_month"] = df["last_login"].dt.month
-df["last_login_dayofweek"] = df["last_login"].dt.dayofweek
-
-reference_date = pd.Timestamp("2025-07-01")
-
-df["days_since_login"] = (
-    reference_date - df["last_login"]
-).dt.days
-
-df["days_since_login"]
-
-X = df.drop(columns="churn")
-y = df["churn"]
-
-from sklearn.model_selection import train_test_split
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y
-)
+Cell 1: import pandas as pd
+Cell 1: import numpy as np
+Cell 1: import matplotlib.pyplot as plt
+Cell 1: import seaborn as sns
+Cell 1: 
+Cell 1: import warnings
+Cell 1: warnings.filterwarnings("ignore")
+Cell 1: 
+Cell 1: pd.set_option("display.max_columns", None)
+Cell 1: pd.set_option("display.max_rows", 100)
+Cell 2: df = pd.read_csv("ecommerce_customer_churn_messy.csv")
+Cell 2: 
+Cell 2: df.head()
+Cell 3: df.shape
+Cell 4: df.columns.tolist()
+Cell 5: df.info()
+Cell 6: df.describe(include="all").T
+Cell 7: missing_summary = pd.DataFrame({
+Cell 7:     "missing_count": df.isnull().sum(),
+Cell 7:     "missing_percent": df.isnull().mean() * 100
+Cell 7: })
+Cell 7: 
+Cell 7: missing_summary = missing_summary.sort_values(
+Cell 7:     "missing_count",
+Cell 7:     ascending=False
+Cell 7: )
+Cell 7: 
+Cell 7: missing_summary
+Cell 8: missing_summary.head(5)
+Cell 9: df.duplicated().sum()
+Cell 10: df["churn"].value_counts(normalize=True) * 100
+Cell 11: df = df.drop_duplicates()
+Cell 12: df.shape
+Cell 13: missing_tokens = [
+Cell 13:     "",
+Cell 13:     "na",
+Cell 13:     "n/a",
+Cell 13:     "nan",
+Cell 13:     "null",
+Cell 13:     "none",
+Cell 13:     "unknown",
+Cell 13:     "?"
+Cell 13: ]
+Cell 13: 
+Cell 13: for col in df.select_dtypes(include=["object", "string"]).columns:
+Cell 13:     df[col] = (
+Cell 13:         df[col]
+Cell 13:         .astype("string")
+Cell 13:         .str.strip()
+Cell 13:         .str.lower()
+Cell 13:     )
+Cell 13: 
+Cell 13:     df[col] = df[col].replace(
+Cell 13:         missing_tokens,
+Cell 13:         np.nan
+Cell 13:     )
+Cell 14: gender_map = {
+Cell 14:     "female": "Female",
+Cell 14:     "f": "Female",
+Cell 14:     "male": "Male",
+Cell 14:     "m": "Male"
+Cell 14: }
+Cell 14: 
+Cell 14: df["gender"] = df["gender"].map(gender_map)
+Cell 14: 
+Cell 14: df["gender"].value_counts(dropna=False)
+Cell 15: membership_map = {
+Cell 15:     "basic": "Basic",
+Cell 15:     "premium": "Premium",
+Cell 15:     "gold": "Gold",
+Cell 15:     "platinum": "Platinum"
+Cell 15: }
+Cell 15: 
+Cell 15: df["membership_type"] = (
+Cell 15:     df["membership_type"]
+Cell 15:     .map(membership_map)
+Cell 15: )
+Cell 15: 
+Cell 15: df["membership_type"].value_counts(dropna=False)
+Cell 16: def parse_number(value):
+Cell 16: 
+Cell 16:     if pd.isna(value):
+Cell 16:         return np.nan
+Cell 16: 
+Cell 16:     value = str(value).strip().lower()
+Cell 16: 
+Cell 16:     if value in [
+Cell 16:         "",
+Cell 16:         "na",
+Cell 16:         "n/a",
+Cell 16:         "nan",
+Cell 16:         "null",
+Cell 16:         "none",
+Cell 16:         "unknown",
+Cell 16:         "?",
+Cell 16:         "-"
+Cell 16:     ]:
+Cell 16:         return np.nan
+Cell 16: 
+Cell 16:     value = value.replace(",", "")
+Cell 16:     value = value.replace("$", "")
+Cell 16:     value = value.replace("usd", "").strip()
+Cell 16: 
+Cell 16:     try:
+Cell 16: 
+Cell 16:         if value.endswith("k"):
+Cell 16:             return float(value[:-1]) * 1_000
+Cell 16: 
+Cell 16:         if value.endswith("m"):
+Cell 16:             return float(value[:-1]) * 1_000_000
+Cell 16: 
+Cell 16:         return float(value)
+Cell 16: 
+Cell 16:     except ValueError:
+Cell 16:         return np.nan
+Cell 17: numeric_columns = [
+Cell 17:     "customer_age",
+Cell 17:     "annual_income",
+Cell 17:     "account_balance",
+Cell 17:     "total_spending",
+Cell 17:     "average_order_value",
+Cell 17:     "number_of_orders",
+Cell 17:     "days_since_last_order",
+Cell 17:     "website_visits",
+Cell 17:     "support_tickets",
+Cell 17:     "discount_usage",
+Cell 17:     "refund_amount",
+Cell 17:     "lifetime_value"
+Cell 17: ]
+Cell 17: 
+Cell 17: for col in numeric_columns:
+Cell 17:     df[col] = df[col].apply(parse_number)
+Cell 18: df[numeric_columns].dtypes
+Cell 19: df.loc[
+Cell 19:     ~df["customer_age"].between(18, 100),
+Cell 19:     "customer_age"
+Cell 19: ] = np.nan
+Cell 20: non_negative_columns = [
+Cell 20:     "annual_income",
+Cell 20:     "total_spending",
+Cell 20:     "average_order_value",
+Cell 20:     "number_of_orders",
+Cell 20:     "days_since_last_order",
+Cell 20:     "website_visits",
+Cell 20:     "support_tickets",
+Cell 20:     "discount_usage",
+Cell 20:     "refund_amount",
+Cell 20:     "lifetime_value"
+Cell 20: ]
+Cell 20: 
+Cell 20: for col in non_negative_columns:
+Cell 20:     df.loc[df[col] < 0, col] = np.nan
+Cell 21: date_columns = [
+Cell 21:     "signup_date",
+Cell 21:     "subscription_start",
+Cell 21:     "subscription_end",
+Cell 21:     "last_purchase_date",
+Cell 21:     "last_login",
+Cell 21:     "cancellation_date"
+Cell 21: ]
+Cell 21: 
+Cell 21: for col in date_columns:
+Cell 21:     df[col] = pd.to_datetime(
+Cell 21:         df[col],
+Cell 21:         format="mixed",
+Cell 21:         errors="coerce"
+Cell 21:     )
+Cell 22: df[date_columns].isnull().sum()
+Cell 23: reference_date = pd.Timestamp("2025-07-01")
+Cell 23: 
+Cell 23: df["days_since_login"] = (
+Cell 23:     reference_date - df["last_login"]
+Cell 23: ).dt.days
+Cell 23: 
+Cell 23: df["days_since_purchase"] = (
+Cell 23:     reference_date - df["last_purchase_date"]
+Cell 23: ).dt.days
+Cell 23: 
+Cell 23: df["customer_tenure_days"] = (
+Cell 23:     reference_date - df["signup_date"]
+Cell 23: ).dt.days
+Cell 23: 
+Cell 23: df["subscription_duration_days"] = (
+Cell 23:     df["subscription_end"]
+Cell 23:     - df["subscription_start"]
+Cell 23: ).dt.days
+Cell 24: df["orders_per_visit"] = (
+Cell 24:     df["number_of_orders"] /
+Cell 24:     df["website_visits"].replace(0, np.nan)
+Cell 24: )
+Cell 24: 
+Cell 24: df["spending_per_order"] = (
+Cell 24:     df["total_spending"] /
+Cell 24:     df["number_of_orders"].replace(0, np.nan)
+Cell 24: )
+Cell 24: 
+Cell 24: df["refund_rate"] = (
+Cell 24:     df["refund_amount"] /
+Cell 24:     df["total_spending"].replace(0, np.nan)
+Cell 24: )
+Cell 24: 
+Cell 24: df["support_tickets_per_order"] = (
+Cell 24:     df["support_tickets"] /
+Cell 24:     df["number_of_orders"].replace(0, np.nan)
+Cell 24: )
+Cell 25: leakage_columns = [
+Cell 25:     "cancellation_reason",
+Cell 25:     "cancellation_date",
+Cell 25:     "final_account_status"
+Cell 25: ]
+Cell 25: 
+Cell 25: df = df.drop(
+Cell 25:     columns=leakage_columns
+Cell 25: )
+Cell 26: df = df.drop(
+Cell 26:     columns=["customer_id"]
+Cell 26: )
+Cell 27: raw_date_columns = [
+Cell 27:     "signup_date",
+Cell 27:     "subscription_start",
+Cell 27:     "subscription_end",
+Cell 27:     "last_purchase_date",
+Cell 27:     "last_login"
+Cell 27: ]
+Cell 27: 
+Cell 27: df = df.drop(
+Cell 27:     columns=raw_date_columns
+Cell 27: )
+Cell 28: df.shape
+Cell 29: df.columns.tolist()
+Cell 30: df.dtypes
+Cell 31: missing_summary = pd.DataFrame({
+Cell 31:     "missing_count": df.isnull().sum(),
+Cell 31:     "missing_percent": df.isnull().mean() * 100
+Cell 31: }).sort_values(
+Cell 31:     "missing_count",
+Cell 31:     ascending=False
+Cell 31: )
+Cell 31: 
+Cell 31: missing_summary
+Cell 32: plt.figure(figsize=(6, 4))
+Cell 32: 
+Cell 32: sns.countplot(
+Cell 32:     data=df,
+Cell 32:     x="churn"
+Cell 32: )
+Cell 32: 
+Cell 32: plt.title("Churn Distribution")
+Cell 32: plt.xlabel("Churn")
+Cell 32: plt.ylabel("Customers")
+Cell 32: 
+Cell 32: plt.show()
+Cell 33: df.to_csv("Clearned_Data.csv",index=False)
